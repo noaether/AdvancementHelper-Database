@@ -1,0 +1,13 @@
+{
+  "name": "AH-DB",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17",
+      "jdkDistro": "amzn",
+      "installGradle": "false",
+      "installMaven": "true",
+      "mavenVersion": "latest"
+    }
+  }
+}
