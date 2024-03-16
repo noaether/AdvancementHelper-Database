@@ -6,15 +6,17 @@ import java.security.cert.CertificateException;
 import java.util.logging.Logger;
 import javax.net.ssl.*;
 
-public class mTLSServer {
+public class mTLSDatabase {
 
-    private static final String KEYSTORE_LOCATION = "serverKeystore.jks";
-    private static final String KEYSTORE_PASSWORD = "serverKeystore";
-    private static final String TRUSTSTORE_LOCATION = "serverTruststore.jks";
-    private static final String TRUSTSTORE_PASSWORD = "serverKeystore";
-    private static final Logger LOGGER = Logger.getLogger(mTLSServer.class.getName());
+    private static final String KEYSTORE_LOCATION = "databaseKeystore.jks";
+    private static final String KEYSTORE_PASSWORD = "databaseKeystore";
+    private static final String TRUSTSTORE_LOCATION = "databaseTruststore.jks";
+    private static final String TRUSTSTORE_PASSWORD = "databaseKeystore";
+    private static final Logger LOGGER = Logger.getLogger(mTLSDatabase.class.getName());
 
     public static void main(String[] args) {
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+
         try {
             // Initialize SSL context
             SSLContext sslContext = SSLContext.getInstance("TLS");
@@ -22,16 +24,16 @@ public class mTLSServer {
             // Initialize key manager factory
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
             KeyStore keyStore = KeyStore.getInstance("JKS");
-            try (FileInputStream keyStoreFileInputStream = new FileInputStream(KEYSTORE_LOCATION)) {
-                keyStore.load(keyStoreFileInputStream, KEYSTORE_PASSWORD.toCharArray());
+            try (InputStream dKInputStream = classloader.getResourceAsStream(KEYSTORE_LOCATION)) {
+                keyStore.load(dKInputStream, KEYSTORE_PASSWORD.toCharArray());
                 keyManagerFactory.init(keyStore, KEYSTORE_PASSWORD.toCharArray());
             }
 
             // Initialize trust manager factory
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance("SunX509");
             KeyStore trustStore = KeyStore.getInstance("JKS");
-            try (FileInputStream trustStoreFileInputStream = new FileInputStream(TRUSTSTORE_LOCATION)) {
-                trustStore.load(trustStoreFileInputStream, TRUSTSTORE_PASSWORD.toCharArray());
+            try (InputStream dTInputStream = classloader.getResourceAsStream(TRUSTSTORE_LOCATION)) {
+                trustStore.load(dTInputStream, TRUSTSTORE_PASSWORD.toCharArray());
                 trustManagerFactory.init(trustStore);
             }
 
@@ -43,19 +45,19 @@ public class mTLSServer {
 
             try {
                 while (true) {
-                    LOGGER.info("Waiting for client connection...\n");
+                    LOGGER.info("Waiting for server connection...\n");
 
                     // Accepting client connections
                     SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
-                    LOGGER.info("Client connected!\n");
+                    LOGGER.info("Server connected!\n");
 
                     // Receiving and responding to client messages
                     InputStream inputStream = sslSocket.getInputStream();
                     OutputStream outputStream = sslSocket.getOutputStream();
                     try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
                         String message = bufferedReader.readLine();
-                        LOGGER.info("Received message from client: " + message + "\n");
-                        String response = "Hello Client";
+                        LOGGER.info("Received message from server: " + message + "\n");
+                        String response = "Hello Server";
                         outputStream.write(response.getBytes());
                     } finally {
                         sslSocket.close();
