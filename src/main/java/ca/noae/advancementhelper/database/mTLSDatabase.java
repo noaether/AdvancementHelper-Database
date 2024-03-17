@@ -3,8 +3,15 @@ package ca.noae.advancementhelper.database;
 import java.io.*;
 import java.security.*;
 import java.security.cert.CertificateException;
+import java.util.Base64;
 import java.util.logging.Logger;
 import javax.net.ssl.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import ca.noae.advancementhelper.database.Structures.AHRequest;
+
+import ca.noae.advancementhelper.database.Helpers.ObjectHelper;
 
 public class mTLSDatabase {
 
@@ -15,6 +22,9 @@ public class mTLSDatabase {
     private static final Logger LOGGER = Logger.getLogger(mTLSDatabase.class.getName());
 
     public static void main(String[] args) {
+
+        ObjectMapper mapper = new ObjectMapper();
+        new ObjectHelper(mapper);
         ClassLoader classloader = Thread.currentThread().getContextClassLoader();
 
         try {
@@ -40,7 +50,7 @@ public class mTLSDatabase {
             // Creating an SSL server socket
             sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
             SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
-            SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket(8000);
+            SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket(8001);
             sslServerSocket.setNeedClientAuth(true); // Require client authentication
 
             try {
@@ -49,15 +59,19 @@ public class mTLSDatabase {
 
                     // Accepting client connections
                     SSLSocket sslSocket = (SSLSocket) sslServerSocket.accept();
-                    LOGGER.info("Server connected!\n");
+                    LOGGER.info("server connected!\n");
 
                     // Receiving and responding to client messages
                     InputStream inputStream = sslSocket.getInputStream();
                     OutputStream outputStream = sslSocket.getOutputStream();
                     try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
                         String message = bufferedReader.readLine();
-                        LOGGER.info("Received message from server: " + message + "\n");
-                        String response = "Hello Server";
+                        message = message.replace("\\\\n", "");
+                        LOGGER.info(message);
+                        AHRequest receivedRequest = mapper.readValue(message, AHRequest.class);
+                        LOGGER.info("Received" + receivedRequest.getRequestChar() + " request from server: " + message + "\n");
+                        LOGGER.info("[] Received token is " + receivedRequest.getPayload().getUserToken());
+                        String response = "Hello server";
                         outputStream.write(response.getBytes());
                     } finally {
                         sslSocket.close();
@@ -68,7 +82,8 @@ public class mTLSDatabase {
             } finally {
                 sslServerSocket.close();
             }
-        } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException | UnrecoverableKeyException | KeyManagementException e) {
+        } catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException
+                | UnrecoverableKeyException | KeyManagementException e) {
             LOGGER.severe("An error occurred: " + e.getMessage());
         }
     }
