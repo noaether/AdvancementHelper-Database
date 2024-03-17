@@ -32,7 +32,5 @@ build/
 ### VS Code ###
 .vscode/
 
-serverKeystore.jks
-serverTruststore.jks
-client.crt
-server.crt
+*.crt
+*.jks
